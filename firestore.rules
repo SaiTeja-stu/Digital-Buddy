@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Data layout: users/{uid} (profile) and users/{uid}/tasks|diary|waterLogs|recycleBin/{docId}
+// A rule on /users/{uid} alone does NOT cover subcollections — you must add the recursive match below.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Anonymous visit log from the auth screen (optional). Tighten or remove if you do not need it.
+    match /visitorLogs/{docId} {
+      allow create: if request.resource.data.visitorId is string
+        && request.resource.data.visitorId.size() > 0
+        && request.resource.data.visitorId.size() < 200;
+      allow read, update, delete: if false;
+    }
+  }
+}
